@@ -5,3 +5,4 @@ export {
   type ErrorClassWithData,
   type ToDataFn,
 } from './errorClassWithData.js';
+export { type IsErrorOfKindFn, isErrorOfKind } from './isErrorOfKind.js';

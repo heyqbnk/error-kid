@@ -31,12 +31,13 @@ npm i error-kid
 
 ## `errorClass`
 
-A function, creating a new basic error class that has no payload.
+A function returning a tuple, containing a new basic error class that has no payload on the first
+place, and a predicate function on the second one.
 
 ```ts
 import { errorClass } from 'error-kid';
 
-const UnknownError = errorClass('UnknownError');
+const [UnknownError, isUnknownError] = errorClass('UnknownError');
 UnknownError.name; // 'UnknownError'
 
 const error = new UnknownError();
@@ -44,6 +45,9 @@ error.message; // ''
 error.cause; // undefined
 error instanceof Error; // true
 error instanceof UnknownError; // true
+
+isUnknownError(new Error); // false
+isUnknownError(error); // true
 ```
 
 By default, the created error class constructor accepts no arguments. It also passes nothing to
@@ -59,7 +63,7 @@ import { errorClass } from 'error-kid';
 
 // The generic parameter must be any tuple. It describes
 // arguments passed to the UnknownError constructor.
-const UnknownError = errorClass<[
+const [UnknownError] = errorClass<[
   errorText: string,
   retriesCount: number,
   cause?: unknown
@@ -93,13 +97,16 @@ The second argument of the generator is a function, converting constructor argum
 import { errorClassWithData } from 'error-kid';
 
 
-const TimeoutError = errorClassWithData<{ duration: number }, [duration: number]>(
-  'UnknownError',
-  duration => ({ duration }),
-);
+const [TimeoutError, isTimeoutError] =
+  errorClassWithData<{ duration: number }, [duration: number]>(
+    'UnknownError',
+    duration => ({ duration }),
+  );
 
-const timeoutError = new TimeoutError(1000);
-timeoutError.data; // { duration: 1000 } 
+const error = new TimeoutError(1000);
+error.data; // { duration: 1000 }
+
+isTimeoutError(error); // true
 ```
 
 As in the `errorClass` function, you can also pass the third argument, which is a function,
@@ -108,9 +115,9 @@ transforming incoming arguments to the arguments, passed to the `Error` super co
 Let's enhance the previous example a bit:
 
 ```ts
-import { createErrorClass } from 'error-kid';
+import { errorClassWithData } from 'error-kid';
 
-const TimeoutError = errorClassWithData<
+const [TimeoutError] = errorClassWithData<
   { duration: number },
   [duration: number, cause?: unknown]
 >(
