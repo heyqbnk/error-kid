@@ -6,7 +6,7 @@ export default defineConfig({
     emptyOutDir: false,
     sourcemap: true,
     lib: {
-      name: 'errorKit',
+      name: 'errorKid',
       entry: 'src/index.ts',
       formats: ['iife'],
       fileName: 'index',

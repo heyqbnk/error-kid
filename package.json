@@ -1,15 +1,15 @@
 {
-  "name": "error-kit",
+  "name": "error-kid",
   "version": "0.0.1",
-  "description": "A simple toolkit to create custom errors.",
+  "description": "A simple toolkit to work with custom errors. Definitely not a kid.",
   "author": "Vladislav Kibenko <wolfram.deus@gmail.com>",
-  "homepage": "https://github.com/heyqbnk/error-kit#readme",
+  "homepage": "https://github.com/heyqbnk/error-kid#readme",
   "repository": {
     "type": "git",
-    "url": "git@github.com:heyqbnk/error-kit.git"
+    "url": "git@github.com:heyqbnk/error-kid.git"
   },
   "bugs": {
-    "url": "https://github.com/heyqbnk/error-kit/issues"
+    "url": "https://github.com/heyqbnk/error-kid/issues"
   },
   "keywords": [
     "error",

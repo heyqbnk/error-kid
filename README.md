@@ -1,32 +1,32 @@
-# `error-kit`
+# `error-kid`
 
 [code-badge]: https://img.shields.io/badge/source-black?logo=github
 
-[link]: https://github.com/heyqbnk/error-kit/tree/master
+[link]: https://github.com/heyqbnk/error-kid/tree/master
 
-[npm-link]: https://npmjs.com/package/error-kit
+[npm-link]: https://npmjs.com/package/error-kid
 
-[npm-badge]: https://img.shields.io/npm/v/error-kit?logo=npm
+[npm-badge]: https://img.shields.io/npm/v/error-kid?logo=npm
 
-[size-badge]: https://img.shields.io/bundlephobia/minzip/error-kit
+[size-badge]: https://img.shields.io/bundlephobia/minzip/error-kid
 
 [![NPM][npm-badge]][npm-link]
 ![Size][size-badge]
 [![code-badge]][link]
 
-A simple toolkit to create custom errors.
+A simple toolkit to work with custom errors. **Definitely not a kid**.
 
 ## Installation
 
 ```bash
 # yarn
-yarn add error-kit
+yarn add error-kid
 
 # pnpm
-pnpm i error-kit
+pnpm i error-kid
 
 # npm
-npm i error-kit
+npm i error-kid
 ```
 
 ## `createErrorClass`
@@ -34,7 +34,7 @@ npm i error-kit
 Creates a new error class with predefined name and data type.
 
 ```ts
-import { createErrorClass } from 'error-kit';
+import { createErrorClass } from 'error-kid';
 
 const UnknownError = createErrorClass('UnknownError');
 UnknownError.name; // 'UnknownError'
@@ -49,7 +49,7 @@ converting passed arguments to the `Error` super constructor.
 Here is the example:
 
 ```ts
-import { createErrorClass } from 'error-kit';
+import { createErrorClass } from 'error-kid';
 
 const UnknownError = createErrorClass<
   // Error name.
@@ -78,7 +78,7 @@ generic argument and provide the `toData` function converting constructor argume
 defined type.
 
 ```ts
-import { createErrorClass } from 'error-kit';
+import { createErrorClass } from 'error-kid';
 
 const TimeoutError = createErrorClass<
   'TimeoutError',
