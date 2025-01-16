@@ -29,43 +29,48 @@ pnpm i error-kid
 npm i error-kid
 ```
 
-## `createErrorClass`
+## `errorClass`
 
-Creates a new error class with predefined name and data type.
+A function, creating a new basic error class that has no payload.
 
 ```ts
-import { createErrorClass } from 'error-kid';
+import { errorClass } from 'error-kid';
 
-const UnknownError = createErrorClass('UnknownError');
+const UnknownError = errorClass('UnknownError');
 UnknownError.name; // 'UnknownError'
+
+const error = new UnknownError();
+error.message; // ''
+error.cause; // undefined
+error instanceof Error; // true
+error instanceof UnknownError; // true
 ```
 
-By default, the created error class constructor accepts no arguments. It also passes nothing
-to the `Error` super constructor.
+By default, the created error class constructor accepts no arguments. It also passes nothing to
+the `Error` super constructor.
 
-To change this behavior, define the arguments' type and provide the `toSuper` options function
-converting passed arguments to the `Error` super constructor.
+To change this behavior, define the arguments' type and provide a function to convert passed
+arguments to the `Error` super constructor.
 
 Here is the example:
 
 ```ts
-import { createErrorClass } from 'error-kid';
+import { errorClass } from 'error-kid';
 
-const UnknownError = createErrorClass<
-  // Error name.
-  'UnknownError',
-  // Constructor arguments.
-  [errorText: string, retriesCount: number, cause?: unknown]
->('UnknownError', {
-  toSuper(errorText, retriesCount, cause) {
-    // `Error` constructor requires the first argument
-    // to be the error message. The second one is ErrorOptions,
-    // containing the `cause` property.
-    return [
-      `Unknown error occurred. Retries count: ${retriesCount}. Error text: ${errorText}`,
-      { cause },
-    ];
-  },
+// The generic parameter must be any tuple. It describes
+// arguments passed to the UnknownError constructor.
+const UnknownError = errorClass<[
+  errorText: string,
+  retriesCount: number,
+  cause?: unknown
+]>('UnknownError', (errorText, retriesCount, cause) => {
+  // `Error` constructor requires the first argument
+  // to be the error message. The second one is ErrorOptions,
+  // containing the `cause` property.
+  return [
+    `Unknown error occurred. Retries count: ${retriesCount}. Error text: ${errorText}`,
+    { cause },
+  ];
 });
 
 const error = new UnknownError('Ooopsie!', 3, new Error('Just because'));
@@ -73,34 +78,54 @@ error.message; // "Unknown error occurred. Retries count: 3. Error text: Ooopsie
 error.cause; // Error('Just because')
 ```
 
-If the custom error class must contain some additional data, consider using the second
-generic argument and provide the `toData` function converting constructor arguments to the 
-defined type.
+## `errorClassWithData`
+
+A function that creates a new error class containing some payload. It enhances the result
+of calling the `errorClass` function.
+
+This function requires specifying at least one generic type parameter describing the error payload.
+The second generic type parameter is optional (an empty tuple by default) and must be a tuple,
+describing a list of arguments, passed to the error class constructor.
+
+The second argument of the generator is a function, converting constructor arguments to the data.
+
+```ts
+import { errorClassWithData } from 'error-kid';
+
+
+const TimeoutError = errorClassWithData<{ duration: number }, [duration: number]>(
+  'UnknownError',
+  duration => ({ duration }),
+);
+
+const timeoutError = new TimeoutError(1000);
+timeoutError.data; // { duration: 1000 } 
+```
+
+As in the `errorClass` function, you can also pass the third argument, which is a function,
+transforming incoming arguments to the arguments, passed to the `Error` super constructor.
+
+Let's enhance the previous example a bit:
 
 ```ts
 import { createErrorClass } from 'error-kid';
 
-const TimeoutError = createErrorClass<
-  'TimeoutError',
+const TimeoutError = errorClassWithData<
   { duration: number },
-  [duration: number]
->('UnknownError', duration => ({ duration }), {
-  toSuper(duration) {
-    return [`Timed out: ${duration}ms`];
-  },
-});
+  [duration: number, cause?: unknown]
+>(
+  'UnknownError',
+  duration => ({ duration }),
+  (duration, cause) => [`Timed out: ${duration}ms`, { cause }],
+);
 
-const error = new TimeoutError(1000);
-error.data; // { duration: 1000 }
-error.message; // "Timed out: 1000ms"
+const err1 = new TimeoutError(1000);
+err1.data; // { duration: 1000 }
+err1.message; // "Timed out: 1000ms"
+err1.cause; // undefined
 
-// Or even without the third argument:
-const AbortError = createErrorClass<
-  'AbortError',
-  { reason: unknown },
-  [cause: unknown]
->('AbortError', cause => ({ reason: cause }));
-
-const error2 = new AbortError(new Error('Just because'));
-error2.data; // { reason: Error('Just because') }
+const err2 = new TimeoutError(1000, new Error('Just because'));
+err2.data; // { duration: 1000 }
+err2.message; // "Timed out: 1000ms"
+err2.cause; // Error('Just because') 
 ```

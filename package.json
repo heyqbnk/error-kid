@@ -1,6 +1,6 @@
 {
   "name": "error-kid",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A simple toolkit to work with custom errors. Definitely not a kid.",
   "author": "Vladislav Kibenko <wolfram.deus@gmail.com>",
   "homepage": "https://github.com/heyqbnk/error-kid#readme",

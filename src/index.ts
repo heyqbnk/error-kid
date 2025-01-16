@@ -1,7 +1,7 @@
+export { errorClass, type CustomErrorClass, type ToSuperFn } from './errorClass.js';
 export {
-  type CreateErrorClassOptions,
-  type CustomErrorClass,
-  type CustomError,
-  createErrorClass,
+  errorClassWithData,
+  type CustomErrorWithData,
+  type ErrorClassWithData,
   type ToDataFn,
-} from './createErrorClass.js';
+} from './errorClassWithData.js';
