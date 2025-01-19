@@ -29,6 +29,11 @@ describe('instance', () => {
     const error = new UnknownError('Ooopsie!', 3, new Error('Just because'));
     expect(error.message).toBe('Unknown error occurred. Retries count: 3. Error text: Ooopsie!');
     expect(error.cause).toStrictEqual(new Error('Just because'));
+
+    const [TimeoutError] = errorClass('TimeoutError', 'Timed out');
+
+    const timeoutError = new TimeoutError();
+    expect(timeoutError.message).toBe('Timed out');
   });
 
   it('should be instance of Error and its class', () => {

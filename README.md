@@ -54,7 +54,8 @@ By default, the created error class constructor accepts no arguments. It also pa
 the `Error` super constructor.
 
 To change this behavior, define the arguments' type and provide a function to convert passed
-arguments to the `Error` super constructor.
+arguments to the `Error` super constructor. It can also be a message presented as string, or
+a tuple passed to the super constructor.
 
 Here is the example:
 
@@ -80,6 +81,13 @@ const [UnknownError] = errorClass<[
 const error = new UnknownError('Ooopsie!', 3, new Error('Just because'));
 error.message; // "Unknown error occurred. Retries count: 3. Error text: Ooopsie!"
 error.cause; // Error('Just because')
+
+// All these defines are ok:
+const Err1 = errorClass('Err1', 'Timed out');
+const Err2 = errorClass('Err2', ['Timed out']);
+const Err3 = errorClass('Err3', ['Timed out', new Error('Oops')]);
+const Err4 = errorClass('Err4', () => ['Timed out', new Error('Oops')]);
+const Err5 = errorClass('Err5', () => ['Timed out']);
 ```
 
 ## `errorClassWithData`
