@@ -4,6 +4,7 @@ import { isErrorOfKind, type IsErrorOfKindFn } from './isErrorOfKind.js';
 export type ToDataFn<ConstructorArgs extends any[], Data> = (...args: ConstructorArgs) => Data;
 
 export interface CustomErrorWithData<Data> extends Error {
+  type: symbol;
   data: Data;
 }
 
@@ -28,8 +29,11 @@ export function errorClassWithData<Data, ConstructorArgs extends any[] = []>(
   ErrorClass: ErrorClassWithData<Data, ConstructorArgs>,
   isInstanceOfErrorClass: IsErrorOfKindFn<CustomErrorWithData<Data>>,
 ] {
+  const type = Symbol(name);
+
   class CustomError extends errorClass(name, toSuper)[0] {
     data: Data;
+    type = type;
 
     constructor(...args: ConstructorArgs) {
       super(...args);
@@ -39,5 +43,5 @@ export function errorClassWithData<Data, ConstructorArgs extends any[] = []>(
 
   Object.defineProperty(CustomError, 'name', { value: name });
 
-  return [CustomError, isErrorOfKind(CustomError)];
+  return [CustomError, isErrorOfKind(CustomError, type)];
 }

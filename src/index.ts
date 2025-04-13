@@ -1,4 +1,4 @@
-export { errorClass, type CustomErrorClass, type ToSuperFn, type ToSuperType } from './errorClass.js';
+export { errorClass, type ErrorClass, type ToSuperFn, type ToSuperType } from './errorClass.js';
 export {
   errorClassWithData,
   type CustomErrorWithData,

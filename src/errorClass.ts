@@ -6,10 +6,15 @@ export type ToSuperFn<ConstructorArgs extends any[]> =
 export type ToSuperType<ConstructorArgs extends any[]> =
   | ToSuperFn<ConstructorArgs>
   | string
-  | Parameters<ErrorConstructor>
+  | Parameters<ErrorConstructor>;
 
-export interface CustomErrorClass<ConstructorArgs extends any[]> {
-  new(...args: ConstructorArgs): Error;
+export interface CustomErrorWithoutData extends Error {
+  type: symbol;
+}
+
+export interface ErrorClass<ConstructorArgs extends any[]> {
+  name: string;
+  new(...args: ConstructorArgs): CustomErrorWithoutData;
 }
 
 /**
@@ -23,12 +28,15 @@ export function errorClass<ConstructorArgs extends any[] = []>(
   name: string,
   toSuper?: ToSuperType<ConstructorArgs>,
 ): [
-  ErrorClass: CustomErrorClass<ConstructorArgs>,
-  isInstanceOfErrorClass: IsErrorOfKindFn<Error>,
+  ErrorClass: ErrorClass<ConstructorArgs>,
+  isInstanceOfErrorClass: IsErrorOfKindFn<InstanceType<ErrorClass<ConstructorArgs>>>,
 ] {
   toSuper ||= [];
+  const type = Symbol(name);
 
-  class CustomError extends Error {
+  class CustomError extends Error implements CustomErrorWithoutData {
+    type = type;
+
     constructor(...args: ConstructorArgs) {
       const params = typeof toSuper === 'function'
         ? toSuper(...args)
@@ -42,5 +50,5 @@ export function errorClass<ConstructorArgs extends any[] = []>(
 
   Object.defineProperty(CustomError, 'name', { value: name });
 
-  return [CustomError, isErrorOfKind(CustomError)];
+  return [CustomError, isErrorOfKind(CustomError, type)];
 }
