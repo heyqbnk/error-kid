@@ -29,7 +29,7 @@ export function errorClass<ConstructorArgs extends any[] = []>(
   toSuper?: ToSuperType<ConstructorArgs>,
 ): [
   ErrorClass: ErrorClass<ConstructorArgs>,
-  isInstanceOfErrorClass: IsErrorOfKindFn<InstanceType<ErrorClass<ConstructorArgs>>>,
+  isInstanceOfErrorClass: IsErrorOfKindFn<CustomErrorWithoutData>,
 ] {
   toSuper ||= [];
   const type = Symbol(name);
