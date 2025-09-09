@@ -1,14 +1,12 @@
 export {
   errorClass,
-  type CustomErrorWithoutData,
   type ErrorClass,
   type ToSuperFn,
-  type ToSuperType
+  type ToSuperType,
 } from './errorClass.js';
 export {
   errorClassWithData,
-  type CustomErrorWithData,
   type ErrorClassWithData,
+  type ErrorWithData,
   type ToDataFn,
 } from './errorClassWithData.js';
-export { type IsErrorOfKindFn, isErrorOfKind } from './isErrorOfKind.js';
