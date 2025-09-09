@@ -1,16 +1,20 @@
 import { errorClass, type ToSuperType } from './errorClass.js';
-import { isErrorOfKind, type IsErrorOfKindFn } from './isErrorOfKind.js';
+import { createIsInstanceOf } from './createIsInstanceOf.js';
 
 export type ToDataFn<ConstructorArgs extends any[], Data> = (...args: ConstructorArgs) => Data;
 
-export interface CustomErrorWithData<Data> extends Error {
-  type: symbol;
-  data: Data;
+export interface ErrorWithData<Data> extends Error {
+  readonly data: Data;
 }
 
-export interface ErrorClassWithData<Data, ConstructorArgs extends any[]> {
+export interface ErrorClassWithData<ConstructorArgs extends any[], Data> {
   name: string;
-  new(...args: ConstructorArgs): CustomErrorWithData<Data>;
+  new(...args: ConstructorArgs): ErrorWithData<Data>;
+  /**
+   * @returns True if the passed value is an instance of this class.
+   * @param value - value to check.
+   */
+  is: (value: unknown) => value is ErrorWithData<Data>;
 }
 
 /**
@@ -25,23 +29,19 @@ export function errorClassWithData<Data, ConstructorArgs extends any[] = []>(
   name: string,
   toData: ToDataFn<ConstructorArgs, Data>,
   toSuper?: ToSuperType<ConstructorArgs>,
-): [
-  ErrorClass: ErrorClassWithData<Data, ConstructorArgs>,
-  isInstanceOfErrorClass: IsErrorOfKindFn<CustomErrorWithData<Data>>,
-] {
-  const type = Symbol(name);
-
-  class CustomError extends errorClass(name, toSuper)[0] {
-    data: Data;
-    type = type;
+): ErrorClassWithData<ConstructorArgs, Data> {
+  class CustomError extends errorClass(name, toSuper) {
+    readonly data: Data;
 
     constructor(...args: ConstructorArgs) {
       super(...args);
       this.data = toData(...args);
     }
+
+    static is = createIsInstanceOf(CustomError);
   }
 
   Object.defineProperty(CustomError, 'name', { value: name });
 
-  return [CustomError, isErrorOfKind(CustomError, type)];
+  return CustomError;
 }
