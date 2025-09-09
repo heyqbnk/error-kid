@@ -37,7 +37,7 @@ place, and a predicate function on the second one.
 ```ts
 import { errorClass } from 'error-kid';
 
-const [UnknownError, isUnknownError] = errorClass('UnknownError');
+const UnknownError = errorClass('UnknownError');
 UnknownError.name; // 'UnknownError'
 
 const error = new UnknownError();
@@ -46,8 +46,8 @@ error.cause; // undefined
 error instanceof Error; // true
 error instanceof UnknownError; // true
 
-isUnknownError(new Error); // false
-isUnknownError(error); // true
+UnknownError.is(new Error); // false
+UnknownError.is(error); // true
 ```
 
 By default, the created error class constructor accepts no arguments. It also passes nothing to
@@ -64,7 +64,7 @@ import { errorClass } from 'error-kid';
 
 // The generic parameter must be any tuple. It describes
 // arguments passed to the UnknownError constructor.
-const [UnknownError] = errorClass<[
+const UnknownError = errorClass<[
   errorText: string,
   retriesCount: number,
   cause?: unknown
@@ -105,16 +105,15 @@ The second argument of the generator is a function, converting constructor argum
 import { errorClassWithData } from 'error-kid';
 
 
-const [TimeoutError, isTimeoutError] =
-  errorClassWithData<{ duration: number }, [duration: number]>(
-    'UnknownError',
-    duration => ({ duration }),
-  );
+const TimeoutError = errorClassWithData<{ duration: number }, [duration: number]>(
+  'UnknownError',
+  duration => ({ duration }),
+);
 
 const error = new TimeoutError(1000);
 error.data; // { duration: 1000 }
 
-isTimeoutError(error); // true
+TimeoutError.is(error); // true
 ```
 
 As in the `errorClass` function, you can also pass the third argument, which is a function,
@@ -125,7 +124,7 @@ Let's enhance the previous example a bit:
 ```ts
 import { errorClassWithData } from 'error-kid';
 
-const [TimeoutError] = errorClassWithData<
+const TimeoutError = errorClassWithData<
   { duration: number },
   [duration: number, cause?: unknown]
 >(
