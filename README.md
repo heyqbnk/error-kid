@@ -143,3 +143,35 @@ err2.data; // { duration: 1000 }
 err2.message; // "Timed out: 1000ms"
 err2.cause; // Error('Just because') 
 ```
+
+## Usage Tips For TypeScript
+
+If your project uses TypeScript, creating a new error class it is recommended to use the `class` keyword. Here is how
+the usage looks traditionally:
+
+```typescript
+const MyError = errorClass('MyError', 'Just an error');
+```
+
+In this case you will not be able to use the `MyError` as a type in the TS type system. So, this code will not work
+as expected:
+
+```typescript
+type Fn = () => (MyError | undefined);
+```
+
+TypeScript will not recognize that `MyError` is actually a class, and you will have to write this kind of code:
+
+```typescript
+type Fn = () => (InstanceType<typeof MyError> | undefined);
+```
+
+It is not very convenient, right? To avoid this kind of problem, define your errors using this way:
+
+```typescript
+class MyError extends errorClass('MyError', 'Just an error') {
+}
+
+// So, this will work fine.
+type Fn = () => (MyError | undefined);
+```
