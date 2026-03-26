@@ -6,7 +6,7 @@
   "homepage": "https://github.com/heyqbnk/error-kid#readme",
   "repository": {
     "type": "git",
-    "url": "git@github.com:heyqbnk/error-kid.git"
+    "url": "git+ssh://git@github.com/heyqbnk/error-kid.git"
   },
   "bugs": {
     "url": "https://github.com/heyqbnk/error-kid/issues"
