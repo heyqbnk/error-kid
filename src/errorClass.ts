@@ -20,24 +20,57 @@ export interface ErrorClass<ConstructorArgs extends any[]> {
 
 /**
  * @returns A new error class with a predefined name.
- * @param name - error class name
- * @param super - a function converting passed constructor arguments to a list of arguments
- * passed to the `Error` constructor. It can also be a message or a list of arguments passed
- * to the super constructor.
  */
 export function errorClass<ConstructorArgs extends any[] = []>(options: {
+  /**
+   * Error class name.
+   */
   name: string,
+  /**
+   * A message error. This value will be passed to the super constructor (Error constructor).
+   */
+  message?: string | ((...args: ConstructorArgs) => string);
+  /**
+   * An error cause. This value will be passed to the super constructor (Error constructor).
+   */
+  cause?: unknown;
+  /**
+   * @deprecated Use `message` and `cause` options instead.
+   */
   super?: ToSuperType<ConstructorArgs>,
 }): ErrorClass<ConstructorArgs> {
+  if (options.super !== undefined) {
+    const warnDubiosOption = (option: string) => {
+      console.warn(`[error-kid] Error "${options.name}" is being created with both options.${option} and options.super specified. options.${option} will be ignored in favor of options.super. Consider replacing options.super with options.message and options.cause.`);
+    };
+    if (options.message !== undefined) {
+      warnDubiosOption('message');
+    }
+    if (options.cause !== undefined) {
+      warnDubiosOption('cause');
+    }
+  }
+
+  const createConstructorArgs = (args: ConstructorArgs): [string?, ErrorOptions?] => {
+    if (options.super !== undefined) {
+      if (typeof options.super === 'function') {
+        return options.super(...args);
+      }
+      if (typeof options.super === 'string') {
+        return [options.super];
+      }
+      return options.super;
+    }
+
+    return [
+      typeof options.message === 'function' ? options.message(...args) : options.message,
+      { cause: options.cause }
+    ];
+  };
+
   class CustomError extends Error {
     constructor(...args: ConstructorArgs) {
-      super(...(
-        typeof options.super === 'function'
-          ? options.super(...args)
-          : typeof options.super === 'string'
-            ? [options.super] satisfies [string]
-            : options.super || []
-      ));
+      super(...createConstructorArgs(args));
       this.name = options.name;
       Object.setPrototypeOf(this, CustomError.prototype);
     }

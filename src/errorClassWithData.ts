@@ -19,15 +19,27 @@ export interface ErrorClassWithData<ConstructorArgs extends any[], Data> {
 
 /**
  * @returns A new error class with a predefined name and data type.
- * @param name - error name
- * @param data - function converting constructor arguments to data
- * @param super - a function converting passed arguments to a list of arguments passed to
- * the `Error` constructor. It can also be a message or a list of arguments passed to the
- * super constructor.
  */
 export function errorClassWithData<Data, ConstructorArgs extends any[] = []>(options: {
+  /**
+   * Error class name.
+   */
   name: string,
+  /**
+   * A function converting constructor arguments to data
+   */
   data: ToDataFn<ConstructorArgs, Data>,
+  /**
+   * A message error. This value will be passed to the super constructor (Error constructor).
+   */
+  message?: string | ((...args: ConstructorArgs) => string);
+  /**
+   * An error cause. This value will be passed to the super constructor (Error constructor).
+   */
+  cause?: unknown;
+  /**
+   * @deprecated Use `message` and `cause` options instead.
+   */
   super?: ToSuperType<ConstructorArgs>,
 }): ErrorClassWithData<ConstructorArgs, Data> {
   class CustomError extends errorClass(options) {

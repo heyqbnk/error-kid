@@ -7,6 +7,33 @@ it('should create a class with specified name property', () => {
   expect(UnknownError.name).toBe('UnknownError');
 });
 
+it('should ignore message and cause options if super is specified', () => {
+  const Class1 = errorClass({ name: 'Class1', super: ['1'], message: '2' });
+  expect(new Class1().message).toBe('1');
+
+  const Class2 = errorClass({ name: 'Class1', super: ['1', { cause: '2' }], cause: '3' });
+  expect(new Class2().cause).toBe('2');
+});
+
+it('should apply "message" option', () => {
+  const Class1 = errorClass({ name: 'Class1', message: 'Error message' });
+  expect(new Class1().message).toBe('Error message');
+
+  const Class2 = errorClass({ name: 'Class2', message: () => 'Error message 2' });
+  expect(new Class2().message).toBe('Error message 2');
+
+  const Class3 = errorClass<[errorNum: number]>({
+    name: 'Class3',
+    message: errorNum => `Error message ${errorNum}`
+  });
+  expect(new Class3(3).message).toBe('Error message 3');
+});
+
+it('should apply "cause" option', () => {
+  const Class1 = errorClass({ name: 'Class1', cause: 'Error cause' });
+  expect(new Class1().cause).toBe('Error cause');
+});
+
 describe('instance', () => {
   describe('no arguments', () => {
     it('should have proper name and message properties', () => {
