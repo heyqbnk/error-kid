@@ -31,6 +31,11 @@ class TimeoutError extends Error {
     Object.setPrototypeOf(this, TimeoutError.prototype);
   }
 }
+
+const err = new TimeoutError(1000);
+if (err instanceof TimeoutError) {
+  // err is TimeoutError
+}
 ```
 
 `error-kid` does all of it for you, and adds a typed `is` predicate along the way:
@@ -45,6 +50,11 @@ class TimeoutError extends errorClassWithData<
   data: duration => ({ duration }),
   message: duration => `Timed out: ${duration}ms`,
 }) {}
+
+const err = new TimeoutError(1000);
+if (TimeoutError.is(err)) {
+  // err is TimeoutError
+}
 ```
 
 ## Installation
