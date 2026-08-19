@@ -16,6 +16,37 @@
 
 A simple toolkit to work with custom errors. **Definitely not a kid**.
 
+## Why
+
+Declaring a custom error class in TypeScript involves more boilerplate than it should:
+
+```ts
+class TimeoutError extends Error {
+  constructor(public readonly duration: number) {
+    super(`Timed out: ${duration}ms`);
+    // Not inherited from the class, must be assigned manually.
+    this.name = 'TimeoutError';
+    // Required to keep `instanceof` working when targeting ES5.
+    // Easy to forget, and silently breaks error handling when omitted.
+    Object.setPrototypeOf(this, TimeoutError.prototype);
+  }
+}
+```
+
+`error-kid` does all of it for you, and adds a typed `is` predicate along the way:
+
+```ts
+import { errorClassWithData } from 'error-kid';
+
+class TimeoutError extends errorClassWithData<
+  { duration: number }, [duration: number]
+>({
+  name: 'TimeoutError',
+  data: duration => ({ duration }),
+  message: duration => `Timed out: ${duration}ms`,
+}) {}
+```
+
 ## Installation
 
 ```bash
@@ -43,7 +74,6 @@ const error = new UnknownError();
 error.message; // ''
 error.cause; // undefined
 error instanceof Error; // true
-error instanceof UnknownError; // true
 
 UnknownError.is(new Error); // false
 UnknownError.is(error); // true
@@ -51,6 +81,22 @@ UnknownError.is(error); // true
 
 By default, created error class constructor accepts no arguments. It also passes nothing to
 the `Error` super constructor.
+
+> [!NOTE]
+> Note that all examples in this document use the `class Err extends errorClass(...) {}` form
+> instead of `const Err = errorClass(...)`. This is intentional. The function returns a value,
+> so assigning it to a variable makes `Err` usable as a value only — using it as a type will
+> not work. Declaring a class, in turn, creates both a value and a type with the same name:
+>
+> ```ts
+> const ConstError = errorClass({ name: 'ConstError' });
+> // Error: 'ConstError' refers to a value, but is being used as a type.
+> function handle(error: ConstError) {}
+>
+> class ClassError extends errorClass({ name: 'ClassError' }) {}
+> // Works as expected.
+> function handle(error: ClassError) {}
+> ```
 
 ### `message`
 
@@ -104,57 +150,34 @@ error.message; // 'Failed to connect'
 error.cause; // Error('ECONNREFUSED')
 ```
 
-### `super` (deprecated)
+### `is`
 
-> [!WARNING]
-> The `super` option is deprecated. Use the `message` and `cause` options instead.
-
-The `super` option is a function converting passed constructor arguments to the list of
-arguments passed to the `Error` super constructor. It can also be a message presented as a
-string, or a tuple passed to the super constructor.
+Each created class has a static `is` method — a type predicate checking if the passed value is
+an instance of this class. Being a standalone function, it can be passed anywhere a predicate
+is expected.
 
 ```ts
 import { errorClass } from 'error-kid';
 
-class ApiError extends errorClass<[
-  errorText: string,
-  retriesCount: number,
-  cause?: unknown
-]>({
-  name: 'ApiError', 
-  super(errorText, retriesCount, cause) {
-    // `Error` constructor requires the first argument
-    // to be the error message. The second one is ErrorOptions,
-    // containing the `cause` property.
-    return [
-      `Request failed. Retries count: ${retriesCount}. Error text: ${errorText}`,
-      { cause },
-    ];
+class TimeoutError extends errorClass({ name: 'TimeoutError' }) {}
+
+try {
+  // ...
+} catch (error) {
+  if (TimeoutError.is(error)) {
+    // `error` is narrowed to TimeoutError here.
+    error.message;
   }
-}) {}
+}
 
-const error = new ApiError('Ooopsie!', 3, new Error('Just because'));
-error.message; // "Request failed. Retries count: 3. Error text: Ooopsie!"
-error.cause; // Error('Just because')
-
-// All these definitions are ok:
-const Err1 = errorClass({ name: 'Err1', super: 'Timed out' });
-const Err2 = errorClass({ name: 'Err2', super: ['Timed out'] });
-const Err3 = errorClass({ name: 'Err3', super: ['Timed out', new Error('Oops')] });
-const Err4 = errorClass({ name: 'Err4', super: () => ['Timed out', new Error('Oops')] });
-const Err5 = errorClass({ name: 'Err5', super: () => ['Timed out'] });
+// Narrowing works in predicate positions too.
+const timeouts = errors.filter(TimeoutError.is);
 ```
 
-When `super` is specified, it takes precedence: the `message` and `cause` options are ignored,
-and a warning is printed to the console.
-
-```ts
-import { errorClass } from 'error-kid';
-
-// Prints a warning. The `message` option is ignored.
-const Err = errorClass({ name: 'Err', super: ['Timed out'], message: 'Ignored' });
-new Err().message; // 'Timed out'
-```
+> [!IMPORTANT]
+> Prefer `is` over `instanceof`. When a class is declared via
+> `class Err extends errorClass(...) {}`, `error instanceof Err` returns `false`, so `is` is
+> the reliable way to check the error type.
 
 ## `errorClassWithData`
 
@@ -175,8 +198,12 @@ error.data; // { duration: 1000 }
 TimeoutError.is(error); // true
 ```
 
-This function accepts the same `message`, `cause` and `super` options as the `errorClass`
-function, and they behave exactly the same way.
+> [!NOTE]
+> Unlike `errorClass`, this function accepts the data type as its **first** generic parameter,
+> and the constructor arguments tuple as the second one.
+
+This function accepts the same `message` and `cause` options as the `errorClass` function, and
+they behave exactly the same way.
 
 ```ts
 import { errorClassWithData } from 'error-kid';
@@ -197,27 +224,18 @@ error.message; // "Timed out: 1000ms"
 error.cause; // Error('Just because')
 ```
 
-Using the deprecated `super` option:
+The `is` predicate narrows the `data` property as well:
 
 ```ts
-import { errorClassWithData } from 'error-kid';
-
-class TimeoutError extends errorClassWithData<
-  { duration: number },
-  [duration: number, cause?: unknown]
->({
-  name: 'TimeoutError',
-  data: duration => ({ duration }),
-  super: (duration, cause) => [`Timed out: ${duration}ms`, { cause }],
-}) {}
-
-const err1 = new TimeoutError(1000);
-err1.data; // { duration: 1000 }
-err1.message; // "Timed out: 1000ms"
-err1.cause; // undefined
-
-const err2 = new TimeoutError(1000, new Error('Just because'));
-err2.data; // { duration: 1000 }
-err2.message; // "Timed out: 1000ms"
-err2.cause; // Error('Just because') 
+try {
+  // ...
+} catch (error) {
+  if (TimeoutError.is(error)) {
+    error.data.duration; // number
+  }
+}
 ```
+
+## License
+
+[MIT](LICENSE)
