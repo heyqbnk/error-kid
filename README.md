@@ -52,17 +52,70 @@ UnknownError.is(error); // true
 By default, created error class constructor accepts no arguments. It also passes nothing to
 the `Error` super constructor.
 
-To change this behavior, define the arguments' type and provide a function to convert passed
-arguments to the `Error` super constructor. It can also be a message presented as string, or
-a tuple passed to the super constructor.
+### `message`
 
-Here is the example:
+To specify the error message, use the `message` option. It accepts either a static string, or
+a function computing the message from the constructor arguments.
 
 ```ts
 import { errorClass } from 'error-kid';
 
-// The generic parameter must be any tuple. It describes
-// arguments passed to the error class constructor.
+const TimeoutError = errorClass({ name: 'TimeoutError', message: 'Timed out' });
+new TimeoutError().message; // 'Timed out'
+```
+
+To compute the message dynamically, define the constructor arguments' type using the generic
+parameter. It must be any tuple, and it describes arguments passed to the error class
+constructor.
+
+```ts
+import { errorClass } from 'error-kid';
+
+class ApiError extends errorClass<[
+  errorText: string,
+  retriesCount: number,
+]>({
+  name: 'ApiError',
+  message: (errorText, retriesCount) => {
+    return `Request failed. Retries count: ${retriesCount}. Error text: ${errorText}`;
+  },
+}) {}
+
+const error = new ApiError('Ooopsie!', 3);
+error.message; // "Request failed. Retries count: 3. Error text: Ooopsie!"
+```
+
+### `cause`
+
+The `cause` option specifies the error cause. It is passed to the `Error` super constructor as
+the `cause` property of `ErrorOptions`.
+
+```ts
+import { errorClass } from 'error-kid';
+
+const DatabaseError = errorClass({
+  name: 'DatabaseError',
+  message: 'Failed to connect',
+  cause: new Error('ECONNREFUSED'),
+});
+
+const error = new DatabaseError();
+error.message; // 'Failed to connect'
+error.cause; // Error('ECONNREFUSED')
+```
+
+### `super` (deprecated)
+
+> [!WARNING]
+> The `super` option is deprecated. Use the `message` and `cause` options instead.
+
+The `super` option is a function converting passed constructor arguments to the list of
+arguments passed to the `Error` super constructor. It can also be a message presented as a
+string, or a tuple passed to the super constructor.
+
+```ts
+import { errorClass } from 'error-kid';
+
 class ApiError extends errorClass<[
   errorText: string,
   retriesCount: number,
@@ -92,6 +145,17 @@ const Err4 = errorClass({ name: 'Err4', super: () => ['Timed out', new Error('Oo
 const Err5 = errorClass({ name: 'Err5', super: () => ['Timed out'] });
 ```
 
+When `super` is specified, it takes precedence: the `message` and `cause` options are ignored,
+and a warning is printed to the console.
+
+```ts
+import { errorClass } from 'error-kid';
+
+// Prints a warning. The `message` option is ignored.
+const Err = errorClass({ name: 'Err', super: ['Timed out'], message: 'Ignored' });
+new Err().message; // 'Timed out'
+```
+
 ## `errorClassWithData`
 
 A function that creates a new error class with typed data. It enhances the result
@@ -111,8 +175,29 @@ error.data; // { duration: 1000 }
 TimeoutError.is(error); // true
 ```
 
-As in the `errorClass` function, you can also pass a function to construct `Error`
-arguments from the arguments, passed to the error constructor.
+This function accepts the same `message`, `cause` and `super` options as the `errorClass`
+function, and they behave exactly the same way.
+
+```ts
+import { errorClassWithData } from 'error-kid';
+
+class TimeoutError extends errorClassWithData<
+  { duration: number },
+  [duration: number]
+>({
+  name: 'TimeoutError',
+  data: duration => ({ duration }),
+  message: duration => `Timed out: ${duration}ms`,
+  cause: new Error('Just because'),
+}) {}
+
+const error = new TimeoutError(1000);
+error.data; // { duration: 1000 }
+error.message; // "Timed out: 1000ms"
+error.cause; // Error('Just because')
+```
+
+Using the deprecated `super` option:
 
 ```ts
 import { errorClassWithData } from 'error-kid';
@@ -121,7 +206,7 @@ class TimeoutError extends errorClassWithData<
   { duration: number },
   [duration: number, cause?: unknown]
 >({
-  name: 'UnknownError',
+  name: 'TimeoutError',
   data: duration => ({ duration }),
   super: (duration, cause) => [`Timed out: ${duration}ms`, { cause }],
 }) {}
