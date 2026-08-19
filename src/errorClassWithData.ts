@@ -1,4 +1,4 @@
-import { errorClass, type ToSuperType } from './errorClass.js';
+import { errorClass, ErrorClassOptions, type ToSuperType } from './errorClass.js';
 import { createErrorPredicate } from './createErrorPredicate.js';
 
 export type ToDataFn<ConstructorArgs extends any[], Data> = (...args: ConstructorArgs) => Data;
@@ -17,31 +17,20 @@ export interface ErrorClassWithData<ConstructorArgs extends any[], Data> {
   is: (value: unknown) => value is ErrorWithData<Data>;
 }
 
-/**
- * @returns A new error class with a predefined name and data type.
- */
-export function errorClassWithData<Data, ConstructorArgs extends any[] = []>(options: {
-  /**
-   * Error class name.
-   */
-  name: string,
+export interface ErrorClassWithDataOptions<Data, ConstructorArgs extends any[]>
+  extends ErrorClassOptions<ConstructorArgs> {
   /**
    * A function converting constructor arguments to data
    */
   data: ToDataFn<ConstructorArgs, Data>,
-  /**
-   * A message error. This value will be passed to the super constructor (Error constructor).
-   */
-  message?: string | ((...args: ConstructorArgs) => string);
-  /**
-   * An error cause. This value will be passed to the super constructor (Error constructor).
-   */
-  cause?: unknown;
-  /**
-   * @deprecated Use `message` and `cause` options instead.
-   */
-  super?: ToSuperType<ConstructorArgs>,
-}): ErrorClassWithData<ConstructorArgs, Data> {
+}
+
+/**
+ * @returns A new error class with a predefined name and data type.
+ */
+export function errorClassWithData<Data, ConstructorArgs extends any[] = []>(
+  options: ErrorClassWithDataOptions<Data, ConstructorArgs>
+): ErrorClassWithData<ConstructorArgs, Data> {
   class CustomError extends errorClass(options) {
     readonly data: Data;
 

@@ -19,7 +19,7 @@ it('should ignore message and cause options if super is specified', () => {
   const Class2 = errorClassWithData<{}>({
     name: 'Class1',
     super: ['1', { cause: '2' }],
-    cause: '3',
+    cause: () => '3',
     data: () => ({})
   });
   expect(new Class2().cause).toBe('2');
@@ -41,7 +41,11 @@ it('should apply "message" option', () => {
 });
 
 it('should apply "cause" option', () => {
-  const Class1 = errorClassWithData<{}>({ name: 'Class1', cause: 'Error cause', data: () => ({}) });
+  const Class1 = errorClassWithData<{}>({
+    name: 'Class1',
+    cause: () => 'Error cause',
+    data: () => ({}),
+  });
   expect(new Class1().cause).toBe('Error cause');
 });
 

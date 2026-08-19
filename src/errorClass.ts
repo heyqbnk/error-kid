@@ -18,10 +18,7 @@ export interface ErrorClass<ConstructorArgs extends any[]> {
   is: (value: unknown) => value is Error;
 }
 
-/**
- * @returns A new error class with a predefined name.
- */
-export function errorClass<ConstructorArgs extends any[] = []>(options: {
+export interface ErrorClassOptions<ConstructorArgs extends any[]> {
   /**
    * Error class name.
    */
@@ -33,12 +30,19 @@ export function errorClass<ConstructorArgs extends any[] = []>(options: {
   /**
    * An error cause. This value will be passed to the super constructor (Error constructor).
    */
-  cause?: unknown;
+  cause?: (...args: ConstructorArgs) => unknown;
   /**
    * @deprecated Use `message` and `cause` options instead.
    */
   super?: ToSuperType<ConstructorArgs>,
-}): ErrorClass<ConstructorArgs> {
+}
+
+/**
+ * @returns A new error class with a predefined name.
+ */
+export function errorClass<ConstructorArgs extends any[] = []>(
+  options: ErrorClassOptions<ConstructorArgs>,
+): ErrorClass<ConstructorArgs> {
   if (options.super !== undefined) {
     const warnDubiosOption = (option: string) => {
       console.warn(`[error-kid] Error "${options.name}" is being created with both options.${option} and options.super specified. options.${option} will be ignored in favor of options.super. Consider replacing options.super with options.message and options.cause.`);
@@ -64,7 +68,7 @@ export function errorClass<ConstructorArgs extends any[] = []>(options: {
 
     return [
       typeof options.message === 'function' ? options.message(...args) : options.message,
-      { cause: options.cause }
+      { cause: options.cause?.(...args) }
     ];
   };
 
