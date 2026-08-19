@@ -143,22 +143,41 @@ error.message; // "Request failed. Retries count: 3. Error text: Ooopsie!"
 
 ### `cause`
 
-The `cause` option specifies the error cause. It is passed to the `Error` super constructor as
-the `cause` property of `ErrorOptions`.
+The `cause` option is a function computing the error cause from the constructor arguments. Its
+returned value is passed to the `Error` super constructor as the `cause` property of
+`ErrorOptions`.
+
+Most commonly the cause is one of the constructor arguments:
 
 ```ts
 import { errorClass } from 'error-kid';
 
-const DatabaseError = errorClass({
+class ApiError extends errorClass<[status: number, cause?: unknown]>({
+  name: 'ApiError',
+  message: status => `Request failed with status ${status}`,
+  cause: (_status, cause) => cause,
+}) {}
+
+const error = new ApiError(500, new Error('ECONNRESET'));
+error.message; // 'Request failed with status 500'
+error.cause; // Error('ECONNRESET')
+```
+
+To use a constant cause, return it from a function accepting no arguments:
+
+```ts
+import { errorClass } from 'error-kid';
+
+class DatabaseError extends errorClass({
   name: 'DatabaseError',
   message: 'Failed to connect',
-  cause: new Error('ECONNREFUSED'),
-});
+  cause: () => new Error('ECONNREFUSED'),
+}) {}
 
-const error = new DatabaseError();
-error.message; // 'Failed to connect'
-error.cause; // Error('ECONNREFUSED')
+new DatabaseError().cause; // Error('ECONNREFUSED')
 ```
+
+When the option is omitted, `cause` is `undefined`.
 
 ### `is`
 
@@ -220,15 +239,15 @@ import { errorClassWithData } from 'error-kid';
 
 class TimeoutError extends errorClassWithData<
   { duration: number },
-  [duration: number]
+  [duration: number, cause?: unknown]
 >({
   name: 'TimeoutError',
   data: duration => ({ duration }),
   message: duration => `Timed out: ${duration}ms`,
-  cause: new Error('Just because'),
+  cause: (_duration, cause) => cause,
 }) {}
 
-const error = new TimeoutError(1000);
+const error = new TimeoutError(1000, new Error('Just because'));
 error.data; // { duration: 1000 }
 error.message; // "Timed out: 1000ms"
 error.cause; // Error('Just because')
