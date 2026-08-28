@@ -1,49 +1,70 @@
-import { errorClass, ErrorClassOptions, type ToSuperType } from './errorClass.js';
-import { createErrorPredicate } from './createErrorPredicate.js';
+import { errorClass, ErrorClassInstance, type ErrorClassOptions } from './errorClass.js';
 
-export type ToDataFn<ConstructorArgs extends any[], Data> = (...args: ConstructorArgs) => Data;
+type ExtractConArgs<T extends ErrorClassOptions<any[], string>> =
+  T extends { message: (...args: infer U) => any }
+    ? U
+    : T extends { cause: (...args: infer U) => any }
+      ? U
+      : T extends { data: (...args: infer U) => any }
+        ? U
+        : [];
 
-export interface ErrorWithData<Data> extends Error {
+type ExtractData<T extends ErrorClassWithDataOptions<any, any[], string>> =
+  T extends { data: (...args: any) => infer U }
+  ? U
+  : never;
+
+export interface ErrorClassWithDataInstance<Data, Name extends string>
+  extends ErrorClassInstance<Name> {
   readonly data: Data;
 }
 
-export interface ErrorClassWithData<ConstructorArgs extends any[], Data> {
-  name: string;
-  new(...args: ConstructorArgs): ErrorWithData<Data>;
+export interface ErrorClassWithData<ConArgs extends any[], Data, Name extends string> {
+  readonly name: Name;
+  new(...args: ConArgs): ErrorClassWithDataInstance<Data, Name>;
   /**
    * @returns True if the passed value is an instance of this class.
    * @param value - value to check.
    */
-  is: (value: unknown) => value is ErrorWithData<Data>;
+  is(value: unknown): value is ErrorClassWithDataInstance<Data, Name>;
 }
 
-export interface ErrorClassWithDataOptions<Data, ConstructorArgs extends any[]>
-  extends ErrorClassOptions<ConstructorArgs> {
+export interface ErrorClassWithDataOptions<Data, ConArgs extends any[], Name extends string>
+  extends ErrorClassOptions<ConArgs, Name> {
   /**
    * A function converting constructor arguments to data
    */
-  data: ToDataFn<ConstructorArgs, Data>,
+  data(...args: ConArgs): Data,
 }
 
 /**
  * @returns A new error class with a predefined name and data type.
  */
-export function errorClassWithData<Data, ConstructorArgs extends any[] = []>(
-  options: ErrorClassWithDataOptions<Data, ConstructorArgs>
-): ErrorClassWithData<ConstructorArgs, Data> {
+export function errorClassWithData<
+  const Options extends ErrorClassWithDataOptions<any, any[], any>,
+>(
+  options: Options
+): ErrorClassWithData<ExtractConArgs<Options>, ExtractData<Options>, Options['name']> {
   class CustomError extends errorClass(options) {
-    readonly data: Data;
+    readonly data: ExtractData<Options>;
 
-    constructor(...args: ConstructorArgs) {
-      super(...args);
+    constructor(...args: ExtractConArgs<Options>) {
+      // Its ok. errorClass function doesn't see the data field that may contain
+      // required typing.
+      super(...args as any);
       this.data = options.data(...args);
       Object.setPrototypeOf(this, CustomError.prototype);
     }
-
-    static is = createErrorPredicate(CustomError);
   }
 
-  Object.defineProperty(CustomError, 'name', { value: options.name });
+  Object.defineProperty(CustomError, 'name', {
+    value: options.name,
+    configurable: true,
+    writable: false,
+    enumerable: true,
+  });
 
-  return CustomError;
+  // The cast is required because Object.defineProperty is invisible to the type system: it cannot
+  // narrow the static "name" from string to Name, nor the tag to its template literal type.
+  return CustomError as unknown as ErrorClassWithData<ExtractConArgs<Options>, ExtractData<Options>, Options['name']>;
 }
