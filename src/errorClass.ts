@@ -1,88 +1,77 @@
-import { createErrorPredicate } from './createErrorPredicate.js';
+import { assignTag, createTag, hasTag } from './tag.js';
 
-export type ToSuperFn<ConstructorArgs extends any[]> =
-  (...args: ConstructorArgs) => Parameters<ErrorConstructor>;
+type ExtractConArgs<T extends ErrorClassOptions<any[], string>> =
+  T extends { message: (...args: infer U) => any }
+    ? U
+      : T extends { cause: (...args: infer U) => any }
+      ? U
+    : [];
 
-export type ToSuperType<ConstructorArgs extends any[]> =
-  | ToSuperFn<ConstructorArgs>
-  | string
-  | Parameters<ErrorConstructor>;
+export interface ErrorClassInstance<Name extends string> extends Error {
+  readonly name: Name;
+  readonly $$errorKidTag: string;
+}
 
-export interface ErrorClass<ConstructorArgs extends any[]> {
-  name: string;
-  new(...args: ConstructorArgs): Error;
+export interface ErrorClass<ConArgs extends any[], Name extends string>
+  extends Error {
+  readonly name: Name;
+  new(...args: ConArgs): ErrorClassInstance<Name>;
   /**
    * @returns True if the passed value is an instance of this class.
    * @param value - value to check.
    */
-  is: (value: unknown) => value is Error;
+  is(value: unknown): value is ErrorClassInstance<Name>;
 }
 
-export interface ErrorClassOptions<ConstructorArgs extends any[]> {
+export interface ErrorClassOptions<ConArgs extends any[], Name extends string> {
   /**
    * Error class name.
    */
-  name: string,
+  name: Name;
   /**
    * A message error. This value will be passed to the super constructor (Error constructor).
    */
-  message?: string | ((...args: ConstructorArgs) => string);
+  message?: string | ((...args: ConArgs) => string);
   /**
    * An error cause. This value will be passed to the super constructor (Error constructor).
    */
-  cause?: (...args: ConstructorArgs) => unknown;
-  /**
-   * @deprecated Use `message` and `cause` options instead.
-   */
-  super?: ToSuperType<ConstructorArgs>,
+  cause?: (...args: ConArgs) => unknown;
 }
 
 /**
  * @returns A new error class with a predefined name.
  */
-export function errorClass<ConstructorArgs extends any[] = []>(
-  options: ErrorClassOptions<ConstructorArgs>,
-): ErrorClass<ConstructorArgs> {
-  if (options.super !== undefined) {
-    const warnDubiosOption = (option: string) => {
-      console.warn(`[error-kid] Error "${options.name}" is being created with both options.${option} and options.super specified. options.${option} will be ignored in favor of options.super. Consider replacing options.super with options.message and options.cause.`);
-    };
-    if (options.message !== undefined) {
-      warnDubiosOption('message');
-    }
-    if (options.cause !== undefined) {
-      warnDubiosOption('cause');
-    }
-  }
-
-  const createConstructorArgs = (args: ConstructorArgs): [string?, ErrorOptions?] => {
-    if (options.super !== undefined) {
-      if (typeof options.super === 'function') {
-        return options.super(...args);
-      }
-      if (typeof options.super === 'string') {
-        return [options.super];
-      }
-      return options.super;
-    }
-
-    return [
-      typeof options.message === 'function' ? options.message(...args) : options.message,
-      { cause: options.cause?.(...args) }
-    ];
-  };
+export function errorClass<const Options extends ErrorClassOptions<any[], string>>(
+  options: Options,
+): ErrorClass<ExtractConArgs<Options>, Options['name']> {
+  const tag = createTag(options.name);
 
   class CustomError extends Error {
-    constructor(...args: ConstructorArgs) {
-      super(...createConstructorArgs(args));
+    constructor(...args: ExtractConArgs<Options>) {
+      super(
+        typeof options.message === 'function'
+          ? options.message(...args)
+          : options.message,
+        { cause: options.cause?.(...args) }
+      );
       this.name = options.name;
+      assignTag(this, tag);
       Object.setPrototypeOf(this, CustomError.prototype);
     }
 
-    static is = createErrorPredicate(CustomError);
+    static is(value: unknown): value is ErrorClassInstance<Options['name']> {
+      return hasTag(value, tag);
+    }
   }
 
-  Object.defineProperty(CustomError, 'name', { value: options.name });
+  Object.defineProperty(CustomError, 'name', {
+    value: options.name,
+    configurable: true,
+    writable: false,
+    enumerable: true,
+  });
 
-  return CustomError;
+  // The cast is required because Object.defineProperty is invisible to the type system: it cannot
+  // narrow the static "name" from string to Name, nor the tag to its template literal type.
+  return CustomError as unknown as ErrorClass<ExtractConArgs<Options>, Options['name']>;
 }
