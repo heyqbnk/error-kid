@@ -10,7 +10,7 @@ type ExtractConArgs<T extends ErrorClassOptions<any[], string>> =
         : [];
 
 type ExtractData<T extends ErrorClassWithDataOptions<any, any[], string>> =
-  T extends { data: (...args: infer U) => any }
+  T extends { data: (...args: any) => infer U }
   ? U
   : never;
 
@@ -49,7 +49,8 @@ export function errorClassWithData<
     readonly data: ExtractData<Options>;
 
     constructor(...args: ExtractConArgs<Options>) {
-      // Its ok. errorClass function doesn't see 
+      // Its ok. errorClass function doesn't see the data field that may contain
+      // required typing.
       super(...args as any);
       this.data = options.data(...args);
       Object.setPrototypeOf(this, CustomError.prototype);
