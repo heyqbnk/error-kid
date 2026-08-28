@@ -1,14 +1,21 @@
 export {
   errorClass,
   type ErrorClass,
-  type ToSuperFn,
-  type ToSuperType,
+  type ErrorClassInstance,
   type ErrorClassOptions,
 } from './errorClass.js';
 export {
   errorClassWithData,
   type ErrorClassWithData,
-  type ErrorWithData,
-  type ToDataFn,
+  type ErrorClassWithDataInstance,
   type ErrorClassWithDataOptions,
 } from './errorClassWithData.js';
+export {
+  matchError,
+  type MatchErrorOptions,
+  type MatchErrorHandlers,
+  type MatchErrorDefaultHandler,
+  type MatchErrorHandlersWithDefault,
+  type ExactMatchErrorHandlers,
+  type MatchErrorHandlersResult,
+} from './matchError.js';
